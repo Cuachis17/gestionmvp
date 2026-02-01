@@ -20,7 +20,7 @@ backend_process = subprocess.Popen(["npm", "run", "server"], cwd=".")
 
 print("Starting Frontend Server...")
 # Run 'npm run dev' in the gestionapp subdirectory
-frontend_process = subprocess.Popen(["npm", "run", "dev"], cwd="./gestionapp")
+frontend_process = subprocess.Popen(["npm", "run", "dev"], cwd="./gestion-FRV")
 
 # Wait for processes to finish (they won't unless crashed or stopped)
 backend_process.wait()
