@@ -1,27 +1,15 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Sun, Moon, Globe } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useLang } from "../context/LangContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const location = useLocation();
-
   const { theme, toggleTheme } = useTheme();
   const { lang, toggleLang, t } = useLang();
-
-  // Handle scroll for blur effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const navLinks = [
     { name: t.nav.home, href: "/" },
@@ -30,135 +18,119 @@ const Navbar = () => {
     { name: t.nav.contact, href: "/contact" },
   ];
 
+  // Handle scroll for dynamic visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Show navbar if at the very top or scrolling up
+      if (currentScrollY < 10 || currentScrollY < lastScrollY) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "glass-subtle shadow-sm" : "bg-[var(--bg-primary)]"
+    <header
+      className={`fixed top-0 z-[100] w-full px-4 py-4 sm:px-10 transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
+        isVisible ? "translate-y-0" : "-translate-y-[150%]"
       }`}
-      style={{ height: "52px" }}
     >
-      <div className="container h-full flex items-center justify-between">
-        {/* Logo */}
-        <Link
-          to="/"
-          className="text-xl font-semibold tracking-tight flex items-center gap-1"
-        >
-          Gestion<span className="text-[var(--accent-color)]">App</span>
-        </Link>
+      <div className="mx-auto flex max-w-[1400px] items-center justify-between rounded-2xl extreme-glass px-6 py-3 shadow-lg shadow-black/5 dark:shadow-black/20 backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center size-9 rounded-xl bg-primary text-white shadow-lg shadow-primary/40">
+            <span className="material-symbols-outlined text-[22px]">
+              business_center
+            </span>
+          </div>
+          <Link
+            to="/"
+            className={`text-xl font-extrabold tracking-tight transition-colors ${
+              theme === "dark" ? "text-white" : "text-black"
+            }`}
+          >
+            BizManage
+          </Link>
+        </div>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => {
-            const isActive = location.pathname === link.href;
-            return (
-              <Link
-                key={link.name}
-                to={link.href}
-                className={`relative px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  isActive
-                    ? "text-[var(--text-primary)]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                }`}
-              >
-                {link.name}
-                {isActive && (
-                  <motion.div
-                    layoutId="navbar-indicator"
-                    className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--accent-color)] rounded-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </div>
+        <nav className="hidden md:flex items-center gap-10">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              to={link.href}
+              className={`text-sm font-semibold transition-colors duration-300 hover:vibrant-accent-orange ${
+                location.pathname === link.href
+                  ? "text-primary vibrant-accent-orange"
+                  : theme === "dark"
+                    ? "text-white/80 hover:text-primary"
+                    : "text-black/70 hover:text-primary"
+              }`}
+            >
+              {link.name}
+            </Link>
+          ))}
+        </nav>
 
-        {/* Right Controls */}
-        <div className="hidden md:flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors"
-            aria-label="Toggle Theme"
-          >
-            {theme === "dark" ? (
-              <Sun size={18} className="text-[var(--text-secondary)]" />
-            ) : (
-              <Moon size={18} className="text-[var(--text-secondary)]" />
-            )}
-          </button>
-
+        <div className="flex items-center gap-3">
           <button
             onClick={toggleLang}
-            className="px-3 py-1.5 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)]"
-            aria-label="Toggle Language"
+            className={`extreme-glass-button flex h-10 items-center justify-center rounded-xl px-4 text-xs font-bold uppercase tracking-widest hover:text-primary ${
+              theme === "dark" ? "text-white/90" : "text-black/90"
+            }`}
           >
-            <Globe size={16} />
-            <span className="uppercase">{lang}</span>
+            {lang}
+          </button>
+          <button
+            onClick={toggleTheme}
+            className={`extreme-glass-button flex h-10 w-10 items-center justify-center rounded-xl hover:text-primary ${
+              theme === "dark" ? "text-white/90" : "text-black/90"
+            }`}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {theme === "dark" ? "light_mode" : "dark_mode"}
+            </span>
+          </button>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden extreme-glass-button flex h-10 w-10 items-center justify-center rounded-xl text-black/90 dark:text-white/90"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {isOpen ? "close" : "menu"}
+            </span>
           </button>
         </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {isOpen ? (
-            <X size={22} className="text-[var(--text-primary)]" />
-          ) : (
-            <Menu size={22} className="text-[var(--text-primary)]" />
-          )}
-        </button>
       </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass-subtle border-t border-[var(--border-subtle)] absolute w-full top-full left-0"
-          >
-            <div className="container flex flex-col py-4 gap-1">
-              {navLinks.map((link) => {
-                const isActive = location.pathname === link.href;
-                return (
-                  <Link
-                    key={link.name}
-                    to={link.href}
-                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? "text-[var(--text-primary)] bg-[var(--bg-secondary)]"
-                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-                    }`}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {link.name}
-                  </Link>
-                );
-              })}
-
-              <div className="flex items-center justify-between mt-2 pt-3 border-t border-[var(--border-subtle)]">
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                >
-                  {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-                  <span>{theme === "dark" ? "Light" : "Dark"}</span>
-                </button>
-                <button
-                  onClick={toggleLang}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] uppercase"
-                >
-                  <Globe size={18} />
-                  <span>{lang}</span>
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+      {/* Mobile Menu Dropdown */}
+      {isOpen && (
+        <div className="absolute top-full left-4 right-4 mt-2 rounded-2xl extreme-glass p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-fade-in-up">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              to={link.href}
+              onClick={() => setIsOpen(false)}
+              className={`text-sm font-semibold p-3 rounded-xl transition-all ${
+                location.pathname === link.href
+                  ? "bg-primary/10 text-primary font-bold"
+                  : `hover:bg-white/5 hover:pl-4 ${theme === "dark" ? "text-white/70" : "text-black/70"}`
+              }`}
+            >
+              {link.name}
+            </Link>
+          ))}
+        </div>
+      )}
+    </header>
   );
 };
 
