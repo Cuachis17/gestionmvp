@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -8,6 +9,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,21 +21,8 @@ export default function Register() {
     }
 
     try {
-      const response = await fetch("http://localhost:3000/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Registration failed");
-      }
-
-      // Registration successful, redirect to home/dashboard
-      navigate("/");
+      await register(name, email, password);
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message);
     }
@@ -211,13 +200,13 @@ export default function Register() {
           </div>
           {/* Footer */}
           <div className="mt-8 text-center border-t border-white/5 pt-6 relative z-10">
-            <a
+            <Link
               className="text-sm text-gray-500 hover:text-white transition-colors flex items-center justify-center gap-1"
-              href="#"
+              to="/login"
             >
-              <span className="material-symbols-outlined text-sm">help</span>
-              Help & Support
-            </a>
+              Already have an account?{" "}
+              <span className="text-primary font-semibold">Sign in</span>
+            </Link>
           </div>
         </div>
         {/* Background Image for context (Subtle pattern) */}
