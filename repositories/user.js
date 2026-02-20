@@ -11,45 +11,64 @@ class userRepository {
   static async verifyUser(email, password) {
     const user = await this.getUserByEmail(email);
     if (!user) {
-      return null;
+      return false;
+    }
+    const validPassword = await bcrypt.compare(password, user.password);
+    return validPassword ? user : false;
+  }
+
+  static async verifyUserWith2FA(email, password, code) {
+    const user = await this.getUserByEmail(email);
+    if (!user) {
+      return false;
     }
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return null;
+      return false;
     }
-    // Return user without password
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    if (!user.twoFactorCode || user.twoFactorCodeExpiry < new Date() && user.twoFactorCode !== code) {
+      return false;
+    }
+    return user.id;
   }
 
-  static async createUser(name, email, password) {
+  static async afSetCode(email, code) {
+    if (!code || code.length !== 6 || !email) {
+      return;
+    }
+    await prisma.user.update({
+      where: { email },
+      data: { twoFactorCode: code, twoFactorCodeExpiry: new Date(Date.now() + 10 * 60 * 1000) },
+    });
+    return;
+  }
+
+  static async verify2FACode(email, code) {
+    const user = await this.getUserByEmail(email);
+    if (!user || !user.twoFactorCode || user.twoFactorCodeExpiry < new Date()) {
+      return false;
+    }
+    return user.twoFactorCode === code;
+  }
+
+  static async createUser(email, password) {
     const saltRounds = parseInt(process.env.SALT) || 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create a default local (business) for this user
-    const local = await prisma.local.create({
-      data: { name: `${name}'s Business` },
-    });
-
     const newUser = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: "master",
-        localId: local.id,
-      },
+      data: { email, password: hashedPassword },
     });
-
-    const { password: _, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
+    const user = this.getUserById(newUser.id);
+    return user;
   }
 
   static async getUserById(id) {
     const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) return null;
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    const activeUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    };
+    return activeUser;
   }
 }
 export default userRepository;

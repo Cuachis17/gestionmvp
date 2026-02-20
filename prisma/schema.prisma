@@ -14,6 +14,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model Local {
   id      Int    @id @default(autoincrement())
   name    String
@@ -36,6 +37,8 @@ model User {
   password    String   @db.VarChar(255)
   role        String   @default("user")
   permissions Json     @default("[]")
+  twoFactorCode  String? @db.VarChar(255)
+  twoFactorCodeExpiry DateTime?
 
   local    Local @relation(fields: [localId], references: [id])
   localId  Int
